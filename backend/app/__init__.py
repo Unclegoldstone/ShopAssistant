@@ -1,0 +1,2 @@
+"""Shop Assistant backend package."""
+
