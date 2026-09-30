@@ -1,2 +1,1 @@
 """Shop Assistant backend package."""
-

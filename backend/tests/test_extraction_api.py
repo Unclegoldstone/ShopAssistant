@@ -80,4 +80,3 @@ def test_after_sales_endpoint_sanitizes_upstream_errors() -> None:
     assert response.status_code == 502
     assert response.json()["detail"]["code"] == "structured_output_error"
     assert "secret provider response" not in response.text
-

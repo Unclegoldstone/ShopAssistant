@@ -7,6 +7,7 @@ import json
 from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.conversation_store import ConversationStore
 from app.main import create_app
 from app.schemas import AfterSalesInfo
 from tests.fakes import FakeStreamingModel
@@ -28,7 +29,11 @@ def main() -> None:
             expected_solution="更换为 42 码",
         ),
     )
-    app = create_app(settings=settings, model=model)
+    app = create_app(
+        settings=settings,
+        model=model,
+        conversation_store=ConversationStore(),
+    )
 
     def chat_body(content: str) -> dict:
         return {
@@ -59,4 +64,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

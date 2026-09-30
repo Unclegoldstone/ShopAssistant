@@ -5,7 +5,14 @@ from pydantic import ValidationError
 
 from app.config import Settings
 
-MODEL_ENV_NAMES = ("MODEL_BASE_URL", "MODEL_NAME", "MODEL_API_KEY")
+MODEL_ENV_NAMES = (
+    "MODEL_BASE_URL",
+    "MODEL_NAME",
+    "MODEL_API_KEY",
+    "DATABASE_URL",
+    "TOOL_TIMEOUT_SECONDS",
+    "TOOL_MAX_ATTEMPTS",
+)
 
 
 def clear_model_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -27,8 +34,11 @@ def test_settings_load_from_dotenv(tmp_path, monkeypatch: pytest.MonkeyPatch) ->
         "MODEL_BASE_URL=https://example.test/compatible-mode/v1\n"
         "MODEL_NAME=qwen-test\n"
         "MODEL_API_KEY=secret-value\n"
+        "DATABASE_URL=mysql+asyncmy://shop:db-secret@localhost:3306/shop_assistant\n"
         "HISTORY_MAX_TOKENS=2048\n"
         "MODEL_TIMEOUT_SECONDS=45\n"
+        "TOOL_TIMEOUT_SECONDS=6\n"
+        "TOOL_MAX_ATTEMPTS=3\n"
         "FRONTEND_ORIGIN=http://localhost:5173\n",
         encoding="utf-8",
     )
@@ -40,17 +50,29 @@ def test_settings_load_from_dotenv(tmp_path, monkeypatch: pytest.MonkeyPatch) ->
     assert settings.model_api_key.get_secret_value() == "secret-value"
     assert settings.history_max_tokens == 2048
     assert settings.model_timeout_seconds == 45
+    assert (
+        settings.database_url.get_secret_value()
+        == "mysql+asyncmy://shop:db-secret@localhost:3306/shop_assistant"
+    )
+    assert settings.tool_timeout_seconds == 6
+    assert settings.tool_max_attempts == 3
 
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [("history_max_tokens", 0), ("model_timeout_seconds", -1)],
+    [
+        ("history_max_tokens", 0),
+        ("model_timeout_seconds", -1),
+        ("tool_timeout_seconds", 0),
+        ("tool_max_attempts", 0),
+    ],
 )
 def test_positive_numeric_settings_are_required(field: str, value: int) -> None:
     values = {
         "model_base_url": "https://example.test/v1",
         "model_name": "qwen-test",
         "model_api_key": "secret-value",
+        "database_url": "mysql+asyncmy://shop:db-secret@localhost:3306/shop_assistant",
         field: value,
     }
 
@@ -64,6 +86,8 @@ def test_api_key_is_not_exposed_in_repr() -> None:
         model_base_url="https://example.test/v1",
         model_name="qwen-test",
         model_api_key="do-not-leak",
+        database_url="mysql+asyncmy://shop:database-secret@localhost:3306/shop_assistant",
     )
 
     assert "do-not-leak" not in repr(settings)
+    assert "database-secret" not in repr(settings)

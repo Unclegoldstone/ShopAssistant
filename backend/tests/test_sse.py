@@ -37,4 +37,3 @@ def test_error_and_done_events_are_well_formed() -> None:
         }
     }
     assert done_event() == "data: [DONE]\n\n"
-

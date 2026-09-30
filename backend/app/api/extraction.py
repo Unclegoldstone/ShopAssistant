@@ -29,4 +29,3 @@ async def extract_after_sales(
                 "message": "结构化抽取暂时不可用，请稍后重试",
             },
         ) from exc
-

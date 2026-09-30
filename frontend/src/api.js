@@ -21,7 +21,7 @@ function parseEvent(frame) {
   return { done: false, payload: JSON.parse(data) }
 }
 
-export async function streamChat({ model, conversationId, content, onContent }) {
+export async function streamChat({ model, conversationId, content, user, onContent, onTool }) {
   const response = await fetch(`${API_BASE_URL}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -30,11 +30,15 @@ export async function streamChat({ model, conversationId, content, onContent }) 
       conversation_id: conversationId,
       messages: [{ role: 'user', content }],
       stream: true,
+      user,
     }),
   })
 
   if (!response.ok) throw new Error(await errorMessage(response))
   if (!response.body) throw new Error('浏览器未提供可读取的响应流')
+
+  const toolName = response.headers.get('X-Shop-Assistant-Tool')
+  onTool?.(toolName)
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
@@ -73,6 +77,21 @@ export async function getConfiguredModel() {
   return model
 }
 
+export async function listConversations(user) {
+  const query = new URLSearchParams({ user })
+  const response = await fetch(`${API_BASE_URL}/v1/conversations?${query}`)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function getConversationHistory(conversationId, user) {
+  const query = new URLSearchParams({ user })
+  const encodedId = encodeURIComponent(conversationId)
+  const response = await fetch(`${API_BASE_URL}/v1/conversations/${encodedId}/messages?${query}`)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
 export async function extractAfterSales(text) {
   const response = await fetch(`${API_BASE_URL}/v1/after-sales/extract`, {
     method: 'POST',
@@ -82,4 +101,79 @@ export async function extractAfterSales(text) {
 
   if (!response.ok) throw new Error(await errorMessage(response))
   return response.json()
+}
+
+export async function runDatabaseTest() {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/database`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function listFaqs() {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/faqs`)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function createFaq(payload) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/faqs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function updateFaq(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/faqs/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function deleteFaq(id) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/faqs/${id}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+}
+
+export async function listTableRecords(tableName) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/tables/${tableName}`)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function createTableRecord(tableName, values) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/tables/${tableName}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values }),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function updateTableRecord(tableName, key, values) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/tables/${tableName}/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values }),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+export async function deleteTableRecord(tableName, key) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/tables/${tableName}/${encodeURIComponent(key)}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) throw new Error(await errorMessage(response))
 }

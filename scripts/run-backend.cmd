@@ -16,6 +16,6 @@ if not exist "%PROJECT_ROOT%\.env" (
 )
 
 cd /d "%PROJECT_ROOT%\backend"
+echo [INFO] Ensure MySQL is healthy and run scripts\migrate-and-seed.cmd before first start.
 "%PYTHON%" -m uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000
 exit /b %ERRORLEVEL%
-

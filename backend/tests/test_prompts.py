@@ -28,7 +28,8 @@ def test_system_prompt_contains_required_boundaries() -> None:
         "不得编造",
         "不得声称已经执行",
         "不得泄露",
-        "不调用工具",
+        "必须优先依据工具结果",
+        "每轮最多选择一个",
     )
 
     assert all(phrase in CUSTOMER_SERVICE_SYSTEM_PROMPT for phrase in required_phrases)
@@ -38,9 +39,9 @@ def test_system_prompts_are_loaded_from_external_files() -> None:
     customer_service_file = BACKEND_ROOT / "prompts" / "customer_service_system.txt"
     extraction_file = BACKEND_ROOT / "prompts" / "after_sales_extraction_system.txt"
 
-    assert CUSTOMER_SERVICE_SYSTEM_PROMPT == customer_service_file.read_text(
-        encoding="utf-8"
-    ).strip()
+    assert (
+        CUSTOMER_SERVICE_SYSTEM_PROMPT == customer_service_file.read_text(encoding="utf-8").strip()
+    )
     assert extraction_prompt.format_messages(description="测试")[0].content == (
         extraction_file.read_text(encoding="utf-8").strip()
     )

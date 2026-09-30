@@ -15,4 +15,3 @@ def create_chat_model(settings: Settings) -> ChatOpenAI:
         timeout=settings.model_timeout_seconds,
         max_retries=2,
     )
-

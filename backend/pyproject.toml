@@ -8,10 +8,13 @@ version = "0.1.0"
 description = "Pure conversation MVP for an e-commerce customer service assistant"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "alembic>=1.16,<2",
+  "asyncmy>=0.2,<1",
   "fastapi>=0.116,<1",
   "langchain>=1.0,<2",
   "langchain-openai>=1.0,<2",
   "pydantic-settings>=2.10,<3",
+  "sqlalchemy>=2.0,<2.1",
   "uvicorn[standard]>=0.35,<1",
 ]
 

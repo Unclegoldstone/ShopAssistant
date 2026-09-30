@@ -67,7 +67,7 @@ async def test_second_turn_receives_first_turn_as_context() -> None:
 
 
 @pytest.mark.asyncio
-async def test_failed_stream_emits_safe_error_and_does_not_commit_history() -> None:
+async def test_failed_stream_emits_safe_error_and_keeps_user_audit_message() -> None:
     model = FakeStreamingModel([RuntimeError("secret upstream detail")])
     store = ConversationStore()
     service = ChatService(model, store, model_name="qwen-test", history_max_tokens=100)
@@ -77,4 +77,4 @@ async def test_failed_stream_emits_safe_error_and_does_not_commit_history() -> N
     assert "secret upstream detail" not in "".join(events)
     assert parse_data(events[-2])["error"]["code"] == "model_stream_error"
     assert parse_data(events[-1]) == "[DONE]"
-    assert await store.get_history("c1") == []
+    assert await store.get_history("c1") == [HumanMessage(content="问题")]

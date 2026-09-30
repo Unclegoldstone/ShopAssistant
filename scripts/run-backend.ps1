@@ -19,6 +19,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.env'))) {
 
 Push-Location (Join-Path $projectRoot 'backend')
 try {
+    Write-Host '[INFO] 首次启动前请确认 MySQL healthy，并运行 scripts\migrate-and-seed.cmd。'
     & $python -m uvicorn app.main:create_app --factory --host 127.0.0.1 --port $Port
     $commandExitCode = $LASTEXITCODE
 }
@@ -26,4 +27,3 @@ finally {
     Pop-Location
 }
 exit $commandExitCode
-

@@ -27,4 +27,3 @@ def test_model_factory_forwards_validated_settings() -> None:
         max_retries=2,
     )
     assert "top-secret" not in repr(settings)
-

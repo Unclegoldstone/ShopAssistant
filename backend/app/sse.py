@@ -48,4 +48,3 @@ def error_event() -> str:
 
 def done_event() -> str:
     return "data: [DONE]\n\n"
-
