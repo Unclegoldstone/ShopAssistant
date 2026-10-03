@@ -18,6 +18,7 @@ from app.models import (
     TicketStatus,
 )
 from app.schemas import DatabaseTableName, TableRecord, TableRecordWrite
+from app.services.knowledge_ingestion import deactivate_faq_knowledge, sync_faq_record
 
 TEST_CONVERSATION_PREFIX = "test-lab-"
 TEST_TICKET_PREFIX = "TL-"
@@ -222,6 +223,8 @@ class TableCrudService:
                 )
                 session.add(record)
                 await session.flush()
+                if isinstance(record, Faq):
+                    await sync_faq_record(session, record)
                 await session.refresh(record)
                 return _to_record(record)
         except ValidationError as exc:
@@ -248,6 +251,8 @@ class TableCrudService:
                     raise TableRecordReadOnlyError(record_key)
                 self._apply_update(table_name, record, values)
                 await session.flush()
+                if isinstance(record, Faq):
+                    await sync_faq_record(session, record)
                 return _to_record(record)
         except ValidationError as exc:
             raise TableRecordValidationError("仅允许符合测试记录规则的字段和取值") from exc
@@ -266,6 +271,8 @@ class TableCrudService:
                 if table_name == "conversations":
                     await session.execute(delete(Ticket).where(Ticket.conversation_id == key))
                     await session.execute(delete(Message).where(Message.conversation_id == key))
+                if isinstance(record, Faq):
+                    await deactivate_faq_knowledge(session, record.id)
                 await session.delete(record)
                 await session.flush()
         except IntegrityError as exc:

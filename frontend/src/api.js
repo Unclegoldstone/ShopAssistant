@@ -177,3 +177,43 @@ export async function deleteTableRecord(tableName, key) {
   })
   if (!response.ok) throw new Error(await errorMessage(response))
 }
+
+async function knowledgeJson(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}/v1/tests/knowledge${path}`, options)
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.json()
+}
+
+function markdownForm(file) {
+  const form = new FormData()
+  form.append('file', file)
+  return form
+}
+
+export function previewKnowledgeMarkdown(file) {
+  return knowledgeJson('/preview', { method: 'POST', body: markdownForm(file) })
+}
+
+export function ingestKnowledgeMarkdown(file) {
+  return knowledgeJson('/ingest', { method: 'POST', body: markdownForm(file) })
+}
+
+export function vectorizeTestKnowledge(faultStage = null) {
+  return knowledgeJson('/vectorize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fault_stage: faultStage }),
+  })
+}
+
+export function searchKnowledge(query, topK = 5) {
+  return knowledgeJson('/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, top_k: topK }),
+  })
+}
+
+export function getKnowledgeSnapshot() {
+  return knowledgeJson('/snapshot')
+}

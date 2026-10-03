@@ -54,6 +54,9 @@ def test_alembic_upgrade_and_downgrade_are_reversible() -> None:
             "alembic_version",
             "conversations",
             "faq",
+            "knowledge_chunks",
+            "knowledge_mining_runs",
+            "knowledge_staging",
             "messages",
             "tickets",
         }

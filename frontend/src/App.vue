@@ -11,6 +11,17 @@ const currentUser = ref(users.includes(storedUser) ? storedUser : users[0])
 const chatBusy = ref(false)
 const route = useRoute()
 const isTestLab = computed(() => route.name === 'tests')
+const isKbLab = computed(() => route.name === 'kb')
+const pageTitle = computed(() => {
+  if (isKbLab.value) return '知识库测试台'
+  if (isTestLab.value) return '功能测试台'
+  return '石块 · AI助手'
+})
+const pageLevel = computed(() => {
+  if (isKbLab.value) return '[ KNOWLEDGE BASE / LEVEL 03 ]'
+  if (isTestLab.value) return '[ FUNCTION TEST LAB / LEVEL 02 ]'
+  return '[ PURE CONVERSATION / LEVEL 01 ]'
+})
 
 watch(currentUser, (user) => localStorage.setItem(USER_KEY, user), { immediate: true })
 provide('currentUser', currentUser)
@@ -28,14 +39,14 @@ provide('chatBusy', chatBusy)
     <header class="hero">
       <div class="hero-copy">
         <p class="eyebrow">
-          {{ isTestLab ? '[ FUNCTION TEST LAB / LEVEL 02 ]' : '[ PURE CONVERSATION / LEVEL 01 ]' }}
+          {{ pageLevel }}
         </p>
         <div class="brand-lockup">
           <span class="title-logo-frame" aria-hidden="true">
             <img class="title-logo" :src="stoneAiLogo" alt="" />
           </span>
           <div class="brand-copy">
-            <h1>{{ isTestLab ? '功能测试台' : '石块 · AI助手' }}</h1>
+            <h1>{{ pageTitle }}</h1>
             <p class="subtitle online-label"><i></i> ONLINE</p>
           </div>
         </div>
@@ -58,6 +69,7 @@ provide('chatBusy', chatBusy)
     <nav class="page-nav" aria-label="页面导航">
       <RouterLink to="/">客服对话</RouterLink>
       <RouterLink to="/tests">功能测试</RouterLink>
+      <RouterLink to="/kb">知识库</RouterLink>
     </nav>
 
     <RouterView />

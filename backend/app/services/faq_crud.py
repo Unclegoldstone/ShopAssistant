@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.models.faq import Faq
 from app.repositories.faq import FaqRepository
 from app.schemas import FaqCreate, FaqItem, FaqUpdate
+from app.services.knowledge_ingestion import deactivate_faq_knowledge, sync_faq_record
 
 
 class FaqNotFoundError(LookupError):
@@ -46,6 +47,7 @@ class FaqCrudService:
                 **payload.model_dump(),
                 is_test=True,
             )
+            await sync_faq_record(session, record)
             return _to_item(record)
 
     async def update(self, faq_id: int, payload: FaqUpdate) -> FaqItem:
@@ -57,6 +59,7 @@ class FaqCrudService:
             record.answer = payload.answer
             record.category = payload.category
             await session.flush()
+            await sync_faq_record(session, record)
             return _to_item(record)
 
     async def delete(self, faq_id: int) -> None:
@@ -66,4 +69,5 @@ class FaqCrudService:
             if record is None:
                 raise FaqNotFoundError(faq_id)
             _ensure_test_record(record.is_test)
+            await deactivate_faq_knowledge(session, record.id)
             await repository.delete(record)

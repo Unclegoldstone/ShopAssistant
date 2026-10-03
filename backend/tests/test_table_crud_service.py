@@ -4,10 +4,12 @@ import os
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import delete
 
 from app.config import Settings
 from app.db.session import create_database_runtime
-from app.models import Conversation, Faq
+from app.models import Conversation, Faq, KnowledgeChunk, KnowledgeVectorStatus
+from app.repositories.knowledge import KnowledgeRepository
 from app.schemas import TableRecordWrite
 from app.services.table_crud import (
     TableCrudService,
@@ -93,6 +95,10 @@ async def test_table_crud_service_covers_all_four_tables() -> None:
             ),
         )
         created.append(("faq", faq.key))
+        async with runtime.session_factory() as session:
+            knowledge = await KnowledgeRepository(session).get_by_source_key(f"faq:{faq.key}")
+            assert knowledge is not None
+            assert knowledge.vector_status is KnowledgeVectorStatus.PENDING
 
         message = await service.create(
             "messages",
@@ -138,6 +144,10 @@ async def test_table_crud_service_covers_all_four_tables() -> None:
         )
         assert updated_faq.values["answer"] == "更新"
         assert updated_faq.values["category"] == "更新后的分类"
+        async with runtime.session_factory() as session:
+            knowledge = await KnowledgeRepository(session).get_by_source_key(f"faq:{faq.key}")
+            assert knowledge is not None
+            assert knowledge.answer == "更新"
 
         updated_conversation = await service.update(
             "conversations",
@@ -174,10 +184,24 @@ async def test_table_crud_service_covers_all_four_tables() -> None:
             ),
         )
         assert updated_ticket.values["status"] == "resolved"
+
+        await service.delete("faq", faq.key)
+        created.remove(("faq", faq.key))
+        async with runtime.session_factory() as session:
+            knowledge = await KnowledgeRepository(session).get_by_source_key(f"faq:{faq.key}")
+            assert knowledge is not None
+            assert knowledge.vector_status is KnowledgeVectorStatus.PENDING_DELETE
     finally:
         for table_name, key in reversed(created):
             try:
                 await service.delete(table_name, key)
             except Exception:
                 pass
+        if "faq" in locals():
+            async with runtime.session_factory.begin() as session:
+                await session.execute(
+                    delete(KnowledgeChunk).where(
+                        KnowledgeChunk.source_key == f"faq:{faq.key}"
+                    )
+                )
         await runtime.dispose()

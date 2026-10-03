@@ -8,6 +8,7 @@ from app.services.conversation_history import ConversationHistoryService
 from app.services.database_test import DatabaseTestService
 from app.services.extraction import ExtractionService
 from app.services.faq_crud import FaqCrudService
+from app.services.knowledge_test import KnowledgeTestService
 from app.services.table_crud import TableCrudService
 
 
@@ -37,3 +38,7 @@ def get_faq_crud_service(request: Request) -> FaqCrudService:
 
 def get_table_crud_service(request: Request) -> TableCrudService:
     return request.app.state.table_crud_service
+
+
+def get_knowledge_test_service(request: Request) -> KnowledgeTestService:
+    return request.app.state.knowledge_test_service

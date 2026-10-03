@@ -10,9 +10,33 @@ from app.config import Settings
 from app.db.session import create_database_runtime
 from app.models import ConversationStatus
 from app.repositories.conversations import ConversationRepository
+from app.services.knowledge_retrieval import KnowledgeMatch
 from app.tools.business import build_business_tools
 from app.tools.executor import ToolExecutionContext, ToolExecutor
 from app.tools.registry import ToolRegistry
+
+
+class FakeKnowledgeRetrieval:
+    async def search(self, keyword: str) -> list[KnowledgeMatch]:
+        if "邮费" in keyword:
+            return [
+                KnowledgeMatch(
+                    chunk_id=2,
+                    question="运费规则",
+                    answer="普通订单满 99 元免基础配送费。",
+                    category="配送政策",
+                    score=0.9,
+                )
+            ]
+        return [
+            KnowledgeMatch(
+                chunk_id=1,
+                question="退货政策是什么",
+                answer="支持符合条件的商品在签收后七天内申请退货。",
+                category="售后",
+                score=0.9,
+            )
+        ]
 
 
 def test_business_tools_have_fixed_names_and_strict_schemas() -> None:
@@ -52,7 +76,13 @@ async def test_demo_query_tools_return_requested_identifiers() -> None:
 async def test_database_tools_find_faq_and_create_one_ticket() -> None:
     runtime = create_database_runtime(Settings())
     conversation_id = f"tool-test-{uuid4().hex}"
-    registry = ToolRegistry(build_business_tools(runtime.session_factory, rng=random.Random(7)))
+    registry = ToolRegistry(
+        build_business_tools(
+            runtime.session_factory,
+            knowledge_retrieval=FakeKnowledgeRetrieval(),  # type: ignore[arg-type]
+            rng=random.Random(7),
+        )
+    )
     executor = ToolExecutor(registry, timeout_seconds=2, max_attempts=2)
     context = ToolExecutionContext(
         conversation_id=conversation_id,
@@ -65,7 +95,7 @@ async def test_database_tools_find_faq_and_create_one_ticket() -> None:
             {"name": "query_faq", "args": {"keyword": "退货政策"}, "id": "call-faq-1"},
             context=context,
         )
-        missing_result = await executor.execute(
+        shipping_result = await executor.execute(
             {"name": "query_faq", "args": {"keyword": "邮费"}, "id": "call-faq-2"},
             context=context,
         )
@@ -91,7 +121,7 @@ async def test_database_tools_find_faq_and_create_one_ticket() -> None:
 
         assert '"ok": true' in faq_result.content
         assert "退货政策是什么" in faq_result.content
-        assert '"code": "not_found"' in missing_result.content
+        assert "满 99 元免基础配送费" in shipping_result.content
         assert first_ticket.content == second_ticket.content
         assert conversation is not None
         assert conversation.status is ConversationStatus.WAITING_HUMAN

@@ -32,6 +32,12 @@ coverage.xml
 build/
 dist/
 
+# Local model downloads and ML caches
+.model-cache/
+.cache/huggingface/
+backend/.cache/
+models/
+
 # --------------------
 # Node.js / Vue / Vite
 # --------------------

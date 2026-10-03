@@ -13,10 +13,24 @@ from app.config import Settings
 from app.conversation_store import ConversationStore
 from app.db.session import create_database_runtime
 from app.services.chat import ChatService
+from app.services.knowledge_retrieval import KnowledgeMatch
 from app.tools.business import build_business_tools
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
 from tests.fakes import FakeStreamingModel
+
+
+class FakeKnowledgeRetrieval:
+    async def search(self, keyword: str) -> list[KnowledgeMatch]:
+        return [
+            KnowledgeMatch(
+                chunk_id=1,
+                question="退货政策是什么",
+                answer="支持符合条件的商品在签收后七天内申请退货。",
+                category="售后",
+                score=0.9,
+            )
+        ]
 
 
 @tool
@@ -151,7 +165,13 @@ async def test_tool_chat_chain_survives_database_store_recreation() -> None:
         ],
     )
     model = FakeStreamingModel([["支持七天内申请退货。"]], decision_responses=[decision])
-    registry = ToolRegistry(build_business_tools(runtime.session_factory, rng=random.Random(7)))
+    registry = ToolRegistry(
+        build_business_tools(
+            runtime.session_factory,
+            knowledge_retrieval=FakeKnowledgeRetrieval(),  # type: ignore[arg-type]
+            rng=random.Random(7),
+        )
+    )
     store = ConversationStore(runtime.session_factory)
     service = ChatService(
         model,

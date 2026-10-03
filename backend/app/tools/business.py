@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models import ConversationStatus
 from app.repositories.conversations import ConversationRepository
-from app.repositories.faq import FaqRepository
 from app.repositories.tickets import TicketRepository
+from app.services.knowledge_retrieval import KnowledgeRetrievalService
 from app.tools.executor import ToolNotFoundError, current_tool_execution_context
 from app.tools.schemas import (
     CreateTicketArgs,
@@ -22,6 +22,7 @@ from app.tools.schemas import (
 def build_business_tools(
     session_factory: async_sessionmaker[AsyncSession] | None,
     *,
+    knowledge_retrieval: KnowledgeRetrievalService | None = None,
     rng: random.Random | None = None,
 ) -> list[BaseTool]:
     random_source = rng or random.Random()
@@ -82,10 +83,9 @@ def build_business_tools(
         description="按关键词查询商城 FAQ。政策、退换货和常见场景问题时使用。",
     )
     async def query_faq(keyword: str) -> dict[str, object]:
-        if session_factory is None:
-            raise RuntimeError("数据库会话不可用")
-        async with session_factory() as session:
-            matches = await FaqRepository(session).search_by_question(keyword)
+        if knowledge_retrieval is None:
+            raise RuntimeError("知识库检索服务不可用")
+        matches = await knowledge_retrieval.search(keyword)
         if not matches:
             raise ToolNotFoundError
         return {
